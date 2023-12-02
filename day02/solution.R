@@ -3,10 +3,6 @@ check_bags <- function(path, part1 = TRUE) {
 
   x <- readLines(path)
 
-  # part1: allowed max is 12 red cubes, 13 green cubes, and 14 blue cubes
-
-  # for each game, we want to extract the number of cubes for each type...maybe as a data frame?
-
   valid_game <- rep(TRUE, length(x))
 
   # in part 1, we must spot bags which have less than this number of cubes of each color:
@@ -14,11 +10,11 @@ check_bags <- function(path, part1 = TRUE) {
   green_max <- 13
   blue_max <- 14
 
+  # in part 2, we must calculate the minimum number of cubes of each color that could have been in the bag
+  # aka the maximum number of cubes observed
   red_mins <- rep(NA, length(x))
   green_mins <- rep(NA, length(x))
   blue_mins <- rep(NA, length(x))
-
-  # in part 2, we must calculate the minimum number of cubes of each color that could have been in the bag
 
   for (i in 1:length(x)) {
 
