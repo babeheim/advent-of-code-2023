@@ -1,44 +1,29 @@
 
 
 calc_gear_ratios <- function(path, verbose = FALSE, part1 = TRUE) {
-
   x <- readLines(path)
-
   map <- matrix(NA, ncol = nchar(x[1]), nrow = length(x))
-
   for (i in 1:nrow(map)) {
     map[i,] <- strsplit(x[i], "")[[1]]
   }
-
   for (i in 1:length(x)) {
-
     if (grepl("\\*", x[i])) {
-
       gears_found <- gregexpr("\\*", x[i])
-
       add <- data.frame(
         row = i,
         col = as.numeric(gears_found[[1]])
       )
-    
       if (!exists("gears")) {
         gears <- add
       } else {
         gears <- bind_rows(gears, add)
       }
-
     }
-
   }
-
   # strategy: for each number, we identify its start and stop characters, and then use those as address points to check if there's an adjacent symbol in the map object
-
   for (i in 1:length(x)) {
-
     if (grepl("\\d+", x[i])) {
-
       nums_found <- gregexpr("\\d+", x[i])
-
       add <- data.frame(
         row = i,
         nums = regmatches(x[i], nums_found)[[1]],
@@ -150,9 +135,7 @@ calc_gear_ratios <- function(path, verbose = FALSE, part1 = TRUE) {
       } else {
         inv <- bind_rows(inv, add)
       }
-
     }
-
   }
 
   inv$nums <- as.numeric(inv$nums)
@@ -162,7 +145,7 @@ calc_gear_ratios <- function(path, verbose = FALSE, part1 = TRUE) {
   } else {
     out <- 0
     for (g in 1:nrow(gears)) {
-      if (sum(inv$gear_num == g, na.rm = TRUE) > 1) {
+      if (sum(inv$gear_num == g, na.rm = TRUE) == 2) {
         out <- out + prod(inv$nums[which(inv$gear_num == g)])
       }
     }
@@ -181,3 +164,12 @@ stopifnot(calc_gear_ratios("day03/test_input.txt", part1 = FALSE) == 467835)
 tic("day 03, part 2")
 stopifnot(calc_gear_ratios("day03/input.txt", part1 = FALSE) == 86879020)
 toc(log = TRUE)
+
+# more examples from reddit
+
+stopifnot(calc_gear_ratios("day03/test_input_ii.txt") == 413)
+stopifnot(calc_gear_ratios("day03/test_input_ii.txt", part1 = FALSE) == 6756)
+
+stopifnot(calc_gear_ratios("day03/test_input_iii.txt") == 925)
+stopifnot(calc_gear_ratios("day03/test_input_iii.txt", part1 = FALSE) == 6756)
+
