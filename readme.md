@@ -1,5 +1,11 @@
 
 
+# [Day 4: Scratchcards](https://adventofcode.com/2023/day/4)
+
+In part 1, we count up the number of winning numbers on each card to find the score. In part 2, the number of winning numbers causes subsequent cards to duplicate in a cascade.
+
+
+
 # [Day 3: Gear Ratios](https://adventofcode.com/2023/day/3)
 
 If a number is adjacent to a "symbol" (`+`, `-`, `*`, `/`, `=`, `@`, `&`, `#`, `%`, `$`), we want to sum it up in part 1. If not adjacent to a symbol, we ignore it!
