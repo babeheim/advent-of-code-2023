@@ -33,7 +33,11 @@ count_cards <- function(path, part1 = TRUE) {
 }
 
 stopifnot(count_cards("day04/test_input.txt") == 13)
+tic("day 04, part 1")
 stopifnot(count_cards("day04/input.txt") == 25004)
+toc(log = TRUE)
 
 stopifnot(count_cards("day04/test_input.txt", part1 = FALSE) == 30)
+tic("day 04, part 2")
 stopifnot(count_cards("day04/input.txt", part1 = FALSE) == 14427616)
+toc(log = TRUE)
