@@ -1,5 +1,7 @@
 
 
+library(parallel)
+
 extract_map <- function(flag, x) {
 
   flag_line <- grep(flag, x)
@@ -51,7 +53,7 @@ seed_to_location <- function(x, maps) {
   return(out)
 }
 
-calc_seed_locations <- function(path, part1 = TRUE) {
+calc_seed_locations <- function(path, part1 = TRUE, n_cores = 4) {
 
   x <- readLines(path)
 
@@ -69,9 +71,35 @@ calc_seed_locations <- function(path, part1 = TRUE) {
   dat$`temperature-to-humidity` <- extract_map("temperature-to-humidity", x)
   dat$`humidity-to-location` <- extract_map("humidity-to-location", x)
 
-  locations <- seed_to_location(seeds, dat)
-  out <- min(locations)
+  if (part1) {
+
+    locations <- seed_to_location(seeds, dat)
+    out <- min(locations)
+
+  } else {
+
+    running_min <- Inf
+    n_seed_starts <- length(seeds) / 2
+
+    seed_mins <- mclapply(1:n_seed_starts, function(j) {
+        seed_start <- seeds[2 * (j-1) + 1]
+        seed_stop <- seed_start - 1 + seeds[2 * (j-1) + 2]
+        check <- seed_start
+        while (check <= seed_stop) {
+          check_location <- seed_to_location(check, dat)
+          if (check_location < running_min) running_min <- check_location
+          check <- check + 1
+        }
+        cat("checked seeds starting at", seeds[2 * (j-1) + 1], "\n")
+        return(running_min)
+      }, mc.cores = n_cores)
+
+    min(unlist(seed_mins))
+
+  }
+
   return(out)
+
 
 }
 
@@ -81,7 +109,9 @@ tic("day 05, part 1")
 stopifnot(calc_seed_locations("day05/input.txt") == 199602917)
 toc(log = TRUE)
 
-# in part 2:
-# seeds: is a RANGE of seed numbers, not individul seed numebrs
-# first value is the start, second value is the range
-# 
+stopifnot(calc_seed_locations("day05/test_input.txt", part1 = FALSE) == 46)
+
+tic("day 05, part 2")
+stopifnot(calc_seed_locations("day05/input.txt", part1 = FALSE, n_cores = 20) == 2254686)
+toc(log = TRUE) # takes 2.3 hours with 20 cores on a mac studio
+
