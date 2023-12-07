@@ -55,4 +55,6 @@ calc_order_sum <- function(path) {
 }
 
 stopifnot(calc_order_sum("day07/test_input.txt") == 6440)
+tic("day 07, part 1")
 stopifnot(calc_order_sum("day07/input.txt") == 249204891)
+toc(log = TRUE)

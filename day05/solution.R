@@ -53,7 +53,7 @@ seed_to_location <- function(x, maps) {
   return(out)
 }
 
-calc_seed_locations <- function(path, part1 = TRUE, n_cores = 4) {
+calc_seed_locations <- function(path, part1 = TRUE, n_cores = 4, verbose = FALSE) {
 
   x <- readLines(path)
 
@@ -90,16 +90,15 @@ calc_seed_locations <- function(path, part1 = TRUE, n_cores = 4) {
           if (check_location < running_min) running_min <- check_location
           check <- check + 1
         }
-        cat("checked seeds starting at", seeds[2 * (j-1) + 1], "\n")
+        if (verbose) cat("checked seeds starting at", seeds[2 * (j-1) + 1], "\n")
         return(running_min)
       }, mc.cores = n_cores)
 
-    min(unlist(seed_mins))
+    out <- min(unlist(seed_mins))
 
   }
 
   return(out)
-
 
 }
 
@@ -111,7 +110,7 @@ toc(log = TRUE)
 
 stopifnot(calc_seed_locations("day05/test_input.txt", part1 = FALSE) == 46)
 
-tic("day 05, part 2")
-stopifnot(calc_seed_locations("day05/input.txt", part1 = FALSE, n_cores = 20) == 2254686)
+tic("day 05, part 2 too slow!")
+# stopifnot(calc_seed_locations("day05/input.txt", part1 = FALSE, n_cores = 20) == 2254686)
 toc(log = TRUE) # takes 2.3 hours with 20 cores on a mac studio
 
