@@ -1,10 +1,9 @@
 
-differ <- function(x, n_times = 1) {
-  if (all(diff(x) == 0)) {
-    out <- n_times
-  } else {
-    out <- differ(diff(x), n_times = n_times + 1)
-  }
+differ <- function(x, order = 1) {
+  if (all(diff(x) == 0))
+    out <- order
+  else
+    out <- differ(diff(x), order = order + 1)
   return(out)
 }
 
@@ -12,6 +11,7 @@ extrapolate <- function(path, part1 = TRUE) {
   x <- readLines(path)
   dat <- strsplit(x, split = "\\s+")
   dat <- lapply(dat, as.numeric)
+  if (!part1) dat <- lapply(dat, rev)
   n_step <- length(dat[[1]])
   pred <- rep(NA, length(dat))
   for (i in 1:length(dat)) {
@@ -21,17 +21,8 @@ extrapolate <- function(path, part1 = TRUE) {
     mat[[1]] <- y
     for (j in 2:order) mat[[j]] <- diff(mat[[j-1]])
     coefs <- rep(NA, order)
-    for (j in order:1) {
-      if (part1) 
-        coefs[order - j + 1] <- mat[[j]][length(mat[[j]])]
-      else 
-        coefs[order - j + 1] <- mat[[j]][1]
-    }
-    if (part1) {
-      output <- cumsum(coefs)
-    } else {
-      output <- cumsum(coefs * (-1)^c(1:order - order %% 2))
-    }
+    for (j in 1:order) coefs[j] <- mat[[j]][length(mat[[j]])]
+    output <- cumsum(coefs)
     pred[i] <- output[length(output)]
   }
   out <- sum(pred)
