@@ -26,10 +26,11 @@ typer <- function(x, wild = "") {
 }
 
 calc_order_sum <- function(path, part1 = TRUE) {
-  if (part1) 
+  if (part1) {
     wild_card <- ""
-  else 
+  } else { 
     wild_card <- "J"
+  }
   x <- readLines(path)
   dat <- data.frame(
     bid = as.numeric(gsub("^\\w*\\s", "", x)),
@@ -49,10 +50,11 @@ calc_order_sum <- function(path, part1 = TRUE) {
   handmat[which(handmat == "A")] <- "14"
   handmat[which(handmat == "K")] <- "13"
   handmat[which(handmat == "Q")] <- "12"
-  if (part1) 
+  if (part1) {
     handmat[which(handmat == "J")] <- "11"
-  else 
+  } else { 
     handmat[which(handmat == "J")] <- "1"
+  }
   handmat[which(handmat == "T")] <- "10"
   class(handmat) <- "integer"
   for (i in 1:length(types)) {
@@ -72,7 +74,7 @@ tic("day 07, part 1")
 stopifnot(calc_order_sum("day07/input.txt") == 249204891)
 toc(log = TRUE)
 
-stopifnot(calc_order_sum("day07/test_input.txt", part1 == FALSE) == 5905)
+stopifnot(calc_order_sum("day07/test_input.txt", part1 = FALSE) == 5905)
 tic("day 07, part 2")
-stopifnot(calc_order_sum("day07/input.txt", part1 == FALSE) == 249666369)
+stopifnot(calc_order_sum("day07/input.txt", part1 = FALSE) == 249666369)
 toc(log = TRUE)

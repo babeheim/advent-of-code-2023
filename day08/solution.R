@@ -2,6 +2,16 @@
 options(scipen = 999)
 library(numbers) # for LCM function
 
+lcmer <- function(x) {
+  out <- LCM(x[1], x[2])
+  if (length(x) > 2) {
+    for (i in 3:length(x)) {
+      out <- LCM(out, x[i])
+    }
+  }
+  return(out)
+}
+
 find_cycle_length <- function(path, part1 = TRUE) {
 
   x <- readLines(path)
