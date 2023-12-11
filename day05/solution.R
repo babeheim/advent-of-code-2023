@@ -110,7 +110,7 @@ toc(log = TRUE)
 
 stopifnot(calc_seed_locations("day05/test_input.txt", part1 = FALSE) == 46)
 
-tic("day 05, part 2 too slow!")
+cat("day 05, part 2 works but is too slow\n")
 # stopifnot(calc_seed_locations("day05/input.txt", part1 = FALSE, n_cores = 20) == 2254686)
-toc(log = TRUE) # takes 2.3 hours with 20 cores on a mac studio
+# toc(log = TRUE) # takes 2.3 hours with 20 cores on a mac studio
 
