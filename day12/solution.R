@@ -33,7 +33,7 @@ match_runs <- function(x, pattern, verbose = FALSE) {
   }
 }
 
-count_possibilities <- function(path, part1 = TRUE) {
+count_possibilities <- function(path, part1 = TRUE, verbose = FALSE) {
 
   x <- readLines(path)
   set_str <- gsub("\\s.+$", "", x)
@@ -92,7 +92,7 @@ count_possibilities <- function(path, part1 = TRUE) {
 
       n_ways[i] <- sum(match_runs(poss, pattern = bad_counts[[i]]))
     }
-    cat(i, "of", length(x), "\n")
+    if (verbose) cat(i, "of", length(x), "\n")
 
   }
 
@@ -105,6 +105,8 @@ stopifnot(count_possibilities("day12/test_input.txt") == 21)
 tic("day 12, part 1")
 stopifnot(count_possibilities("day12/input.txt") == 6488)
 toc(log = TRUE)
+
+cat("day 12, part 2 is unfinished\n")
 
 # its not possible on even the test input using my original approach!
 # count_possibilities("day12/test_input.txt", part1 = FALSE) == 525152

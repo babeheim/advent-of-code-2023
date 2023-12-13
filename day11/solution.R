@@ -56,3 +56,5 @@ stopifnot(calc_galaxy_dist("day11/test_input.txt", 100) == 8410)
 tic("day 11, part 2")
 stopifnot(calc_galaxy_dist("day11/input.txt", 1e6) == 779032247216)
 toc(log = TRUE)
+
+
