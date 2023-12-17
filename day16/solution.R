@@ -1,12 +1,13 @@
 
-beam_dfs_sim <- function(edge, obj, beam, verbose = FALSE) {
+turn_right <- function(x) (x - 1) %% 4
+
+turn_left <- function(x) (x + 1) %% 4
+
+beam_dfs_sim <- function(edge, obj, beam) {
 
   is_energized <- rep(FALSE, length.out = edge^2)
 
-  east_hist <- integer()
-  west_hist <- integer()
-  north_hist <- integer()
-  south_hist <- integer()
+  hist <- list(integer(), integer(), integer(), integer())
 
   stack <- list(beam)
 
@@ -16,10 +17,13 @@ beam_dfs_sim <- function(edge, obj, beam, verbose = FALSE) {
     active <- TRUE
     while (active) {
       if (beam$heading == 0) { # beam is going east
+        split_char <- "|"
+        right_char <- "\\"
+        left_char <- "/"
         path_objs <- which(
           obj$row == beam$row &
           obj$col > beam$col &
-          obj$type %in% c("|", "\\", "/")
+          obj$type %in% c(split_char, left_char, right_char)
         )
         if (length(path_objs) > 0) {
           next_obj <- path_objs[which.min(obj$col[path_objs])] # going east
@@ -28,36 +32,27 @@ beam_dfs_sim <- function(edge, obj, beam, verbose = FALSE) {
           add <- data.frame(row = beam$row, col = (beam$col + 1):obj$col[next_obj])
           add$i <- (add$col - 1L) * edge + add$row
           is_energized[add$i] <- TRUE
-          backtracked <- any(add$i %in% east_hist)
+          backtracked <- any(add$i %in% hist[[beam$heading + 1]])
 
           if (backtracked) {
-            if (verbose) cat("backtracked!\n")
             active <- FALSE
           } else {
             # send beam to next object
             beam$col <- obj$col[next_obj]
             beam$row <- obj$row[next_obj]
-            east_hist <- c(east_hist, add$i)
-            if (obj$type[next_obj] == "|") {
-              if (verbose) cat("encountered |\n")
+            hist[[beam$heading + 1]] <- c(hist[[beam$heading + 1]], add$i)
+            if (obj$type[next_obj] == split_char) {
               split <- beam
-              # current beam executes right turn, going south
-              beam$heading <- 3
-              # split beam executes left turn, going north
-              split$heading <- 1
+              split$heading <- turn_left(beam$heading)
               stack[[length(stack) + 1]] <- split
-            } else if (obj$type[next_obj] == "\\") {
-              if (verbose) cat("encountered \\\n")
-              # right turn, going south
-              beam$heading <- 3
-            } else if (obj$type[next_obj] == "/") {
-              if (verbose) cat("encountered /\n")
-              # left turn, going north
-              beam$heading <- 1
+              beam$heading <- turn_right(beam$heading)
+            } else if (obj$type[next_obj] == right_char) {
+              beam$heading <- turn_right(beam$heading)
+            } else if (obj$type[next_obj] == left_char) {
+              beam$heading <- turn_left(beam$heading)
             }
           }
         } else {
-          if (verbose) cat("exiting map on east edge\n")
           if (beam$col < edge) {
             add <- data.frame(row = beam$row, col = (beam$col + 1):edge)
             add$i <- (add$col - 1) * edge + add$row
@@ -66,10 +61,13 @@ beam_dfs_sim <- function(edge, obj, beam, verbose = FALSE) {
           active <- FALSE
         }
       } else if (beam$heading == 2) { # beam is going west
+        split_char <- "|"
+        right_char <- "\\"
+        left_char <- "/"
         path_objs <- which(
           obj$row == beam$row &
           obj$col < beam$col &
-          obj$type %in% c("|", "\\", "/")
+          obj$type %in% c(split_char, left_char, right_char)
         )
         if (length(path_objs) > 0) {
           # send beam to next object
@@ -79,36 +77,27 @@ beam_dfs_sim <- function(edge, obj, beam, verbose = FALSE) {
           add <- data.frame(row = beam$row, col = (beam$col - 1):obj$col[next_obj])
           add$i <- (add$col - 1) * edge + add$row
           is_energized[add$i] <- TRUE
-          backtracked <- any(add$i %in% west_hist)
+          backtracked <- any(add$i %in% hist[[beam$heading + 1]])
 
           if (backtracked) {
-            if (verbose) cat("backtracked!\n")
             active <- FALSE
           } else {
             # send beam to next object
             beam$col <- obj$col[next_obj]
             beam$row <- obj$row[next_obj]
-            west_hist <- c(west_hist, add$i)
-            if (obj$type[next_obj] == "|") {
-              if (verbose) cat("encountered |\n")
+            hist[[beam$heading + 1]] <- c(hist[[beam$heading + 1]], add$i)
+            if (obj$type[next_obj] == split_char) {
               split <- beam
-              # current beam executes right turn, going north
-              beam$heading <- 1
-              # split beam executes left turn, going south
-              split$heading <- 3
+              split$heading <- turn_left(beam$heading)
               stack[[length(stack) + 1]] <- split
-            } else if (obj$type[next_obj] == "\\") {
-              if (verbose) cat("encountered \\\n")
-              # right turn, going north
-              beam$heading <- 1
-            } else if (obj$type[next_obj] == "/") {
-              if (verbose) cat("encountered /\n")
-              # left turn, going south
-              beam$heading <- 3
+              beam$heading <- turn_right(beam$heading)
+            } else if (obj$type[next_obj] == right_char) {
+              beam$heading <- turn_right(beam$heading)
+            } else if (obj$type[next_obj] == left_char) {
+              beam$heading <- turn_left(beam$heading)
             }
           }
         } else {
-          if (verbose) cat("exiting map on west edge\n")
           if (beam$col > 1) {
             add <- data.frame(row = beam$row, col = (beam$col - 1):1)
             add$i <- (add$col - 1) * edge + add$row
@@ -117,47 +106,39 @@ beam_dfs_sim <- function(edge, obj, beam, verbose = FALSE) {
           active <- FALSE
         }
       } else if (beam$heading == 1) { # beam is going north
+        split_char <- "-"
+        left_char <- "\\"
+        right_char <- "/"
         path_objs <- which(
           obj$row < beam$row &
           obj$col == beam$col &
-          obj$type %in% c("-", "\\", "/")
+          obj$type %in% c(split_char, left_char, right_char)
         )
         if (length(path_objs) > 0) {
           next_obj <- path_objs[which.max(obj$row[path_objs])] # going north
-
           # trace out path, energize tiles, and do backtrack test
           add <- data.frame(row = (beam$row - 1):obj$row[next_obj], col = beam$col)
           add$i <- (add$col - 1) * edge + add$row
           is_energized[add$i] <- TRUE
-          backtracked <- any(add$i %in% north_hist)
-
+          backtracked <- any(add$i %in% hist[[beam$heading + 1]])
           if (backtracked) {
-            if (verbose) cat("backtracked!\n")
             active <- FALSE
           } else {
             beam$col <- obj$col[next_obj]
             beam$row <- obj$row[next_obj]
-            north_hist <- c(north_hist, add$i)
-            if (obj$type[next_obj] == "-") {
-              if (verbose) cat("encountered -\n")
+            hist[[beam$heading + 1]] <- c(hist[[beam$heading + 1]], add$i)
+            if (obj$type[next_obj] == split_char) {
               split <- beam
-              # current beam executes right turn, going east
-              beam$heading <- 0
-              # split beam executes left turn, going west
-              split$heading <- 2
+              split$heading <- turn_left(beam$heading)
               stack[[length(stack) + 1]] <- split
-            } else if (obj$type[next_obj] == "\\") {
-              if (verbose) cat("encountered \\\n")
-              # left turn, going west
-              beam$heading <- 2
-            } else if (obj$type[next_obj] == "/") {
-              if (verbose) cat("encountered /\n")
-              # right turn, going east
-              beam$heading <- 0
+              beam$heading <- turn_right(beam$heading)
+            } else if (obj$type[next_obj] == left_char) {
+              beam$heading <- turn_left(beam$heading)
+            } else if (obj$type[next_obj] == right_char) {
+              beam$heading <- turn_right(beam$heading)
             }
           }
         } else {
-          if (verbose) cat("exiting map on north edge\n")
           if (beam$row > 1) {
             add <- data.frame(row = (beam$row - 1):1, col = beam$col)
             add$i <- (add$col - 1) * edge + add$row
@@ -166,10 +147,13 @@ beam_dfs_sim <- function(edge, obj, beam, verbose = FALSE) {
           active <- FALSE
         }
       } else if (beam$heading == 3) { # beam is going south
+        split_char <- "-"
+        left_char <- "\\"
+        right_char <- "/"
         path_objs <- which(
           obj$row > beam$row &
           obj$col == beam$col &
-          obj$type %in% c("-", "\\", "/")
+          obj$type %in% c(split_char, left_char, right_char)
         )
         if (length(path_objs) > 0) {
           next_obj <- path_objs[which.min(obj$row[path_objs])] # going south
@@ -178,35 +162,26 @@ beam_dfs_sim <- function(edge, obj, beam, verbose = FALSE) {
           add <- data.frame(row = (beam$row + 1):obj$row[next_obj], col = beam$col)
           add$i <- (add$col - 1) * edge + add$row
           is_energized[add$i] <- TRUE
-          backtracked <- any(add$i %in% south_hist)
+          backtracked <- any(add$i %in% hist[[beam$heading + 1]])
           if (backtracked) {
-            if (verbose) cat("backtracked!\n")
             active <- FALSE
           } else {
             # send beam to next object
             beam$col <- obj$col[next_obj]
             beam$row <- obj$row[next_obj]
-            south_hist <- c(south_hist, add$i)
-            if (obj$type[next_obj] == "-") {
-              if (verbose) cat("encountered -\n")
+            hist[[beam$heading + 1]] <- c(hist[[beam$heading + 1]], add$i)
+            if (obj$type[next_obj] == split_char) {
               split <- beam
-              # current beam executes right turn, going west
-              beam$heading <- 2
-              # split beam executes left turn, going east
-              split$heading <- 0
+              split$heading <- turn_left(beam$heading)
               stack[[length(stack) + 1]] <- split
-            } else if (obj$type[next_obj] == "\\") {
-              if (verbose) cat("encountered \\\n")
-              # left turn, going east
-              beam$heading <- 0
-            } else if (obj$type[next_obj] == "/") {
-              if (verbose) cat("encountered /\n")
-              # right turn, going west
-              beam$heading <- 2
+              beam$heading <- turn_right(beam$heading)
+            } else if (obj$type[next_obj] == left_char) {
+              beam$heading <- turn_left(beam$heading)
+            } else if (obj$type[next_obj] == right_char) {
+              beam$heading <- turn_right(beam$heading)
             }
           }
         } else {
-          if (verbose) cat("exiting map on south edge\n")
           if (beam$row < edge) {
             add <- data.frame(row = (beam$row + 1):edge, col = beam$col)
             add$i <- (add$col - 1) * edge + add$row
@@ -220,6 +195,7 @@ beam_dfs_sim <- function(edge, obj, beam, verbose = FALSE) {
   out <- sum(is_energized)
   return(out)
 }
+
 
 count_energized_tiles <- function(path, part1 = TRUE, verbose = FALSE) {
 
@@ -263,27 +239,27 @@ count_energized_tiles <- function(path, part1 = TRUE, verbose = FALSE) {
     # initialize beam outside map
     beam <- list(row = 1L, col = 0L, heading = 0)
     # use DFS to simulate beam paths and count energized tiles
-    out <- beam_dfs_sim(edge, obj, beam, verbose)
+    out <- beam_dfs_sim(edge, obj, beam)
   } else {
     north_scores <- rep(NA, edge)
     for (i in 1:length(north_scores)) {
       beam <- list(row = 0L, col = i, heading = 3)
-      north_scores[i] <- beam_dfs_sim(edge, obj, beam, verbose)
+      north_scores[i] <- beam_dfs_sim(edge, obj, beam)
     }
     south_scores <- rep(NA, edge)
     for (i in 1:length(south_scores)) {
       beam <- list(row = edge + 1L, col = i, heading = 1)
-      south_scores[i] <- beam_dfs_sim(edge, obj, beam, verbose)
+      south_scores[i] <- beam_dfs_sim(edge, obj, beam)
     }
     west_scores <- rep(NA, edge)
     for (i in 1:length(west_scores)) {
       beam <- list(row = i, col = 0L, heading = 0)
-      west_scores[i] <- beam_dfs_sim(edge, obj, beam, verbose)
+      west_scores[i] <- beam_dfs_sim(edge, obj, beam)
     }
     east_scores <- rep(NA, edge)
     for (i in 1:length(east_scores)) {
       beam <- list(row = i, col = edge + 1L, heading = 2)
-      east_scores[i] <- beam_dfs_sim(edge, obj, beam, verbose)
+      east_scores[i] <- beam_dfs_sim(edge, obj, beam)
     }
     out <- max(north_scores, south_scores, west_scores, east_scores)
   }
