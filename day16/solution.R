@@ -3,102 +3,18 @@ rm(list = ls())
 
 source("project_support.R")
 
-check_overlap <- function(x, y, min_length = 2) {
-  if (length(x) >= min_length) {
-    if (x[1] %in% y) {
-      tar <- which(y == x[1])
-      for (i in 1:length(tar)) {
-        if (tar[i] + (length(x) - 1) <= length(y)) {
-          check <- tar[i] + 0:(length(x)-1)
-          if (identical(x, y[check])) {
-            return(TRUE)
-          } else if (i == length(tar)) {
-            return(FALSE)
-          }
-        } else {
-          return(FALSE)
-        }    
-      }
-    } else {
-      return(FALSE)
-    }
-  } else {
-    return(FALSE)
-  }
-}
+beam_dfs_sim <- function(edge, obj, beam, verbose = FALSE) {
 
-count_illuminated_tiles <- function(path, verbose = FALSE) {
-
-  x <- readLines(path)
-  map <- str_to_mat(x)
-
-  edge <- nrow(map) # check its square
-  stopifnot(ncol(map) == edge)
-
-  add <- data.frame(
-    i = which(map == "|")
-  )
-  add$row <- (add$i - 1L) %% edge + 1L
-  add$col <- (add$i - 1L) %/% edge + 1L
-  add$type <- "|"
-
-  obj <- add
-
-  add <- data.frame(
-    i = which(map == "-")
-  )
-  add$row <- (add$i - 1L) %% edge + 1L
-  add$col <- (add$i - 1L) %/% edge + 1L
-  add$type <- "-"
-
-  obj <- bind_rows(obj, add)
-
-  add <- data.frame(
-    i = which(map == "/")
-  )
-  add$row <- (add$i - 1L) %% edge + 1L
-  add$col <- (add$i - 1L) %/% edge + 1L
-  add$type <- "/"
-
-  obj <- bind_rows(obj, add)
-
-  add <- data.frame(
-    i = which(map == "\\")
-  )
-  add$row <- (add$i - 1L) %% edge + 1L
-  add$col <- (add$i - 1L) %/% edge + 1L
-  add$type <- "\\"
-
-  obj <- bind_rows(obj, add)
-
-  # create a DFS stack storing row, col and heading
+  is_energized <- rep(FALSE, length.out = edge^2)
 
   east_hist <- integer()
   west_hist <- integer()
   north_hist <- integer()
   south_hist <- integer()
 
-  beam <- list(row = 1L, col = 1L, heading = 0, beam_id = 1)
-  if (map[1,1] == "\\") {
-    # crazy but this appears in my input data, implication is
-    # the beam is actually firing downwards!
-    beam$heading <- 3
-    south_hist <- 1L
-    # my code was never written to evaluate the first point...
-  } else {
-    east_hist <- 1L
-  }
-
   stack <- list(beam)
 
-  beam_counter <- 1
-
-  is_energized <- rep(FALSE, length.out = edge^2)
-  is_energized[1] <- TRUE
-
   while (length(stack) > 0) {
-
-    if (beam_counter %% 1000 == 0) print(beam_counter)
     beam <- stack[[length(stack)]]
     stack[length(stack)] <- NULL
     active <- TRUE
@@ -129,8 +45,6 @@ count_illuminated_tiles <- function(path, verbose = FALSE) {
             if (obj$type[next_obj] == "|") {
               if (verbose) cat("encountered |\n")
               split <- beam
-              beam_counter <- beam_counter + 1
-              split$beam_id <- beam_counter
               # current beam executes right turn, going south
               beam$heading <- 3
               # split beam executes left turn, going north
@@ -182,8 +96,6 @@ count_illuminated_tiles <- function(path, verbose = FALSE) {
             if (obj$type[next_obj] == "|") {
               if (verbose) cat("encountered |\n")
               split <- beam
-              beam_counter <- beam_counter + 1
-              split$beam_id <- beam_counter
               # current beam executes right turn, going north
               beam$heading <- 1
               # split beam executes left turn, going south
@@ -233,8 +145,6 @@ count_illuminated_tiles <- function(path, verbose = FALSE) {
             if (obj$type[next_obj] == "-") {
               if (verbose) cat("encountered -\n")
               split <- beam
-              beam_counter <- beam_counter + 1
-              split$beam_id <- beam_counter
               # current beam executes right turn, going east
               beam$heading <- 0
               # split beam executes left turn, going west
@@ -284,8 +194,6 @@ count_illuminated_tiles <- function(path, verbose = FALSE) {
             if (obj$type[next_obj] == "-") {
               if (verbose) cat("encountered -\n")
               split <- beam
-              beam_counter <- beam_counter + 1
-              split$beam_id <- beam_counter
               # current beam executes right turn, going west
               beam$heading <- 2
               # split beam executes left turn, going east
@@ -314,15 +222,82 @@ count_illuminated_tiles <- function(path, verbose = FALSE) {
     }
   } # DFS while loop
   out <- sum(is_energized)
-
   return(out)
 }
 
-stopifnot(count_illuminated_tiles("day16/test_input.txt") == 46)
+check_overlap <- function(x, y, min_length = 2) {
+  if (length(x) >= min_length) {
+    if (x[1] %in% y) {
+      tar <- which(y == x[1])
+      for (i in 1:length(tar)) {
+        if (tar[i] + (length(x) - 1) <= length(y)) {
+          check <- tar[i] + 0:(length(x)-1)
+          if (identical(x, y[check])) {
+            return(TRUE)
+          } else if (i == length(tar)) {
+            return(FALSE)
+          }
+        } else {
+          return(FALSE)
+        }    
+      }
+    } else {
+      return(FALSE)
+    }
+  } else {
+    return(FALSE)
+  }
+}
+
+count_energized_tiles <- function(path, verbose = FALSE) {
+
+  x <- readLines(path)
+  map <- str_to_mat(x)
+
+  edge <- nrow(map)
+  stopifnot(ncol(map) == edge)
+
+  # create object table
+  add <- data.frame(
+    i = which(map == "|")
+  )
+  add$row <- (add$i - 1L) %% edge + 1L
+  add$col <- (add$i - 1L) %/% edge + 1L
+  add$type <- "|"
+  obj <- add
+  add <- data.frame(
+    i = which(map == "-")
+  )
+  add$row <- (add$i - 1L) %% edge + 1L
+  add$col <- (add$i - 1L) %/% edge + 1L
+  add$type <- "-"
+  obj <- bind_rows(obj, add)
+  add <- data.frame(
+    i = which(map == "/")
+  )
+  add$row <- (add$i - 1L) %% edge + 1L
+  add$col <- (add$i - 1L) %/% edge + 1L
+  add$type <- "/"
+  obj <- bind_rows(obj, add)
+  add <- data.frame(
+    i = which(map == "\\")
+  )
+  add$row <- (add$i - 1L) %% edge + 1L
+  add$col <- (add$i - 1L) %/% edge + 1L
+  add$type <- "\\"
+  obj <- bind_rows(obj, add)
+
+  # initialize beam outside map
+  beam <- list(row = 1L, col = 0L, heading = 0)
+
+  # use DFS to simulate beam paths and count energized tiles
+  out <- beam_dfs_sim(edge, obj, beam, verbose)
+  return(out)
+
+}
+
+stopifnot(count_energized_tiles("day16/test_input.txt") == 46)
 
 tic("day 16, part 1")
-stopifnot(count_illuminated_tiles("day16/input.txt", verbose = FALSE) == 7870)
+stopifnot(count_energized_tiles("day16/input.txt", verbose = FALSE) == 7870)
 toc(log = TRUE)
-
-# gotta go in from any start value!
-
