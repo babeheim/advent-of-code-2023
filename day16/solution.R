@@ -3,14 +3,12 @@ turn_right <- function(x) (x - 1) %% 4
 
 turn_left <- function(x) (x + 1) %% 4
 
+# hacky, repetitive...
+
 beam_dfs_sim <- function(edge, obj, beam) {
-
   is_energized <- rep(FALSE, length.out = edge^2)
-
-  hist <- list(integer(), integer(), integer(), integer())
-
+  hist <- list(integer(), integer(), integer(), integer()) # is this memoization?
   stack <- list(beam)
-
   while (length(stack) > 0) {
     beam <- stack[[length(stack)]]
     stack[length(stack)] <- NULL
@@ -27,13 +25,11 @@ beam_dfs_sim <- function(edge, obj, beam) {
         )
         if (length(path_objs) > 0) {
           next_obj <- path_objs[which.min(obj$col[path_objs])] # going east
-          
           # trace out path, energize tiles, and do backtrack test
           add <- data.frame(row = beam$row, col = (beam$col + 1):obj$col[next_obj])
           add$i <- (add$col - 1L) * edge + add$row
           is_energized[add$i] <- TRUE
           backtracked <- any(add$i %in% hist[[beam$heading + 1]])
-
           if (backtracked) {
             active <- FALSE
           } else {
@@ -72,13 +68,11 @@ beam_dfs_sim <- function(edge, obj, beam) {
         if (length(path_objs) > 0) {
           # send beam to next object
           next_obj <- path_objs[which.max(obj$col[path_objs])] # going west
-
           # trace out path, energize tiles, and do backtrack test
           add <- data.frame(row = beam$row, col = (beam$col - 1):obj$col[next_obj])
           add$i <- (add$col - 1) * edge + add$row
           is_energized[add$i] <- TRUE
           backtracked <- any(add$i %in% hist[[beam$heading + 1]])
-
           if (backtracked) {
             active <- FALSE
           } else {
@@ -157,7 +151,6 @@ beam_dfs_sim <- function(edge, obj, beam) {
         )
         if (length(path_objs) > 0) {
           next_obj <- path_objs[which.min(obj$row[path_objs])] # going south
-          
           # trace out path, energize tiles, and do backtrack test
           add <- data.frame(row = (beam$row + 1):obj$row[next_obj], col = beam$col)
           add$i <- (add$col - 1) * edge + add$row
