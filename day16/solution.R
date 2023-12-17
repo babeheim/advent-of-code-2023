@@ -1,9 +1,4 @@
 
-# problem: we need the path to prevent backtracking, but we cant let the thing grow so big that it slows everything down
-
-# solution: if the add is two tiles long, we can use adjacent illuminations...somehow?
-# there's backtracking, and thee's backtracking. if the beam is stuck in its own loop we want that to die (so don't grow the path overall). but there IS efficiency gains when you know one beam has already travelled on the path the current beam is on, but how to store that??
-
 rm(list = ls())
 
 source("project_support.R")
@@ -32,7 +27,7 @@ check_overlap <- function(x, y, min_length = 2) {
   }
 }
 
-count_illuminated_tiles <- function(path, verbose = TRUE) {
+count_illuminated_tiles <- function(path, verbose = FALSE) {
 
   x <- readLines(path)
   map <- str_to_mat(x)
@@ -43,8 +38,8 @@ count_illuminated_tiles <- function(path, verbose = TRUE) {
   add <- data.frame(
     i = which(map == "|")
   )
-  add$row <- (add$i - 1) %% edge + 1
-  add$col <- (add$i - 1) %/% edge + 1
+  add$row <- (add$i - 1L) %% edge + 1L
+  add$col <- (add$i - 1L) %/% edge + 1L
   add$type <- "|"
 
   obj <- add
@@ -52,8 +47,8 @@ count_illuminated_tiles <- function(path, verbose = TRUE) {
   add <- data.frame(
     i = which(map == "-")
   )
-  add$row <- (add$i - 1) %% edge + 1
-  add$col <- (add$i - 1) %/% edge + 1
+  add$row <- (add$i - 1L) %% edge + 1L
+  add$col <- (add$i - 1L) %/% edge + 1L
   add$type <- "-"
 
   obj <- bind_rows(obj, add)
@@ -61,8 +56,8 @@ count_illuminated_tiles <- function(path, verbose = TRUE) {
   add <- data.frame(
     i = which(map == "/")
   )
-  add$row <- (add$i - 1) %% edge + 1
-  add$col <- (add$i - 1) %/% edge + 1
+  add$row <- (add$i - 1L) %% edge + 1L
+  add$col <- (add$i - 1L) %/% edge + 1L
   add$type <- "/"
 
   obj <- bind_rows(obj, add)
@@ -70,35 +65,36 @@ count_illuminated_tiles <- function(path, verbose = TRUE) {
   add <- data.frame(
     i = which(map == "\\")
   )
-  add$row <- (add$i - 1) %% edge + 1
-  add$col <- (add$i - 1) %/% edge + 1
+  add$row <- (add$i - 1L) %% edge + 1L
+  add$col <- (add$i - 1L) %/% edge + 1L
   add$type <- "\\"
 
   obj <- bind_rows(obj, add)
 
   # create a DFS stack storing row, col and heading
 
-  east_hist <- matrix(FALSE, nrow = edge, ncol = edge)
-  west_hist <- matrix(FALSE, nrow = edge, ncol = edge)
-  north_hist <- matrix(FALSE, nrow = edge, ncol = edge)
-  south_hist <- matrix(FALSE, nrow = edge, ncol = edge)
+  east_hist <- integer()
+  west_hist <- integer()
+  north_hist <- integer()
+  south_hist <- integer()
 
-  beam <- list(row = 1, col = 1, heading = 0, beam_id = 1, path = 1)
+  beam <- list(row = 1L, col = 1L, heading = 0, beam_id = 1)
   if (map[1,1] == "\\") {
     # crazy but this appears in my input data, implication is
     # the beam is actually firing downwards!
     beam$heading <- 3
-    south_hist[1,1] <- TRUE
+    south_hist <- 1L
     # my code was never written to evaluate the first point...
   } else {
-    east_hist[1,1] <- TRUE
+    east_hist <- 1L
   }
 
   stack <- list(beam)
 
   beam_counter <- 1
 
-  is_illuminated <- rep(FALSE, length.out = edge^2)
+  is_energized <- rep(FALSE, length.out = edge^2)
+  is_energized[1] <- TRUE
 
   while (length(stack) > 0) {
 
@@ -115,21 +111,21 @@ count_illuminated_tiles <- function(path, verbose = TRUE) {
         )
         if (length(path_objs) > 0) {
           next_obj <- path_objs[which.min(obj$col[path_objs])] # going east
+          
+          # trace out path, energize tiles, and do backtrack test
           add <- data.frame(row = beam$row, col = (beam$col + 1):obj$col[next_obj])
-          # do a backtracking check on add: does this new additional path overlap at all with the existing path?
-          add$i <- (add$col - 1) * edge + add$row
-          add$beam_id <- beam$beam_id
-          visited <- c(beam$path, which(east_hist))
-          backtracked <- check_overlap(add$i, visited)
-          east_hist[add$i] <- TRUE
+          add$i <- (add$col - 1L) * edge + add$row
+          is_energized[add$i] <- TRUE
+          backtracked <- any(add$i %in% east_hist)
+
           if (backtracked) {
             if (verbose) cat("backtracked!\n")
             active <- FALSE
-            is_illuminated[beam$path] <- TRUE
           } else {
-            # go to the next object
-            beam$path <- c(beam$path, add$i)
+            # send beam to next object
             beam$col <- obj$col[next_obj]
+            beam$row <- obj$row[next_obj]
+            east_hist <- c(east_hist, add$i)
             if (obj$type[next_obj] == "|") {
               if (verbose) cat("encountered |\n")
               split <- beam
@@ -155,11 +151,9 @@ count_illuminated_tiles <- function(path, verbose = TRUE) {
           if (beam$col < edge) {
             add <- data.frame(row = beam$row, col = (beam$col + 1):edge)
             add$i <- (add$col - 1) * edge + add$row
-            add$beam_id <- beam$beam_id
-            beam$path <- c(beam$path, add$i)
+            is_energized[add$i] <- TRUE
           }
           active <- FALSE
-          is_illuminated[beam$path] <- TRUE
         }
       } else if (beam$heading == 2) { # beam is going west
         path_objs <- which(
@@ -168,22 +162,23 @@ count_illuminated_tiles <- function(path, verbose = TRUE) {
           obj$type %in% c("|", "\\", "/")
         )
         if (length(path_objs) > 0) {
+          # send beam to next object
           next_obj <- path_objs[which.max(obj$col[path_objs])] # going west
+
+          # trace out path, energize tiles, and do backtrack test
           add <- data.frame(row = beam$row, col = (beam$col - 1):obj$col[next_obj])
-          # do a backtracking check on add: does this new additional path overlap at all with the existing path?
           add$i <- (add$col - 1) * edge + add$row
-          add$beam_id <- beam$beam_id
-          visited <- c(beam$path, which(west_hist))
-          backtracked <- check_overlap(add$i, visited)
-          west_hist[add$i] <- TRUE
+          is_energized[add$i] <- TRUE
+          backtracked <- any(add$i %in% west_hist)
+
           if (backtracked) {
             if (verbose) cat("backtracked!\n")
             active <- FALSE
-            is_illuminated[beam$path] <- TRUE
           } else {
-            # go to the next object
-            beam$path <- c(beam$path, add$i)
+            # send beam to next object
             beam$col <- obj$col[next_obj]
+            beam$row <- obj$row[next_obj]
+            west_hist <- c(west_hist, add$i)
             if (obj$type[next_obj] == "|") {
               if (verbose) cat("encountered |\n")
               split <- beam
@@ -209,11 +204,9 @@ count_illuminated_tiles <- function(path, verbose = TRUE) {
           if (beam$col > 1) {
             add <- data.frame(row = beam$row, col = (beam$col - 1):1)
             add$i <- (add$col - 1) * edge + add$row
-            add$beam_id <- beam$beam_id
-            beam$path <- c(beam$path, add$i)
+            is_energized[add$i] <- TRUE
           }
           active <- FALSE
-          is_illuminated[beam$path] <- TRUE
         }
       } else if (beam$heading == 1) { # beam is going north
         path_objs <- which(
@@ -223,22 +216,20 @@ count_illuminated_tiles <- function(path, verbose = TRUE) {
         )
         if (length(path_objs) > 0) {
           next_obj <- path_objs[which.max(obj$row[path_objs])] # going north
+
+          # trace out path, energize tiles, and do backtrack test
           add <- data.frame(row = (beam$row - 1):obj$row[next_obj], col = beam$col)
-          # do a backtracking check on add: does this new additional path overlap at all with the existing path?
           add$i <- (add$col - 1) * edge + add$row
-          add$beam_id <- beam$beam_id
-          which_west <- which(north_hist)
-          visited <- c(beam$path, which(north_hist))
-          backtracked <- check_overlap(add$i, visited)
-          north_hist[add$i] <- TRUE
+          is_energized[add$i] <- TRUE
+          backtracked <- any(add$i %in% north_hist)
+
           if (backtracked) {
             if (verbose) cat("backtracked!\n")
             active <- FALSE
-            is_illuminated[beam$path] <- TRUE
           } else {
-            # go to the next object
-            beam$path <- c(beam$path, add$i)
+            beam$col <- obj$col[next_obj]
             beam$row <- obj$row[next_obj]
+            north_hist <- c(north_hist, add$i)
             if (obj$type[next_obj] == "-") {
               if (verbose) cat("encountered -\n")
               split <- beam
@@ -264,11 +255,9 @@ count_illuminated_tiles <- function(path, verbose = TRUE) {
           if (beam$row > 1) {
             add <- data.frame(row = (beam$row - 1):1, col = beam$col)
             add$i <- (add$col - 1) * edge + add$row
-            add$beam_id <- beam$beam_id
-            beam$path <- c(beam$path, add$i)
+            is_energized[add$i] <- TRUE
           }
           active <- FALSE
-          is_illuminated[beam$path] <- TRUE
         }
       } else if (beam$heading == 3) { # beam is going south
         path_objs <- which(
@@ -278,21 +267,20 @@ count_illuminated_tiles <- function(path, verbose = TRUE) {
         )
         if (length(path_objs) > 0) {
           next_obj <- path_objs[which.min(obj$row[path_objs])] # going south
+          
+          # trace out path, energize tiles, and do backtrack test
           add <- data.frame(row = (beam$row + 1):obj$row[next_obj], col = beam$col)
-          # do a backtracking check on add: does this new additional path overlap at all with the existing path?
           add$i <- (add$col - 1) * edge + add$row
-          add$beam_id <- beam$beam_id
-          visited <- c(beam$path, which(south_hist))
-          backtracked <- check_overlap(add$i, visited)
-          south_hist[add$i] <- TRUE
+          is_energized[add$i] <- TRUE
+          backtracked <- any(add$i %in% south_hist)
           if (backtracked) {
             if (verbose) cat("backtracked!\n")
             active <- FALSE
-            is_illuminated[beam$path] <- TRUE
           } else {
-            # go to the next object
-            beam$path <- c(beam$path, add$i)
+            # send beam to next object
+            beam$col <- obj$col[next_obj]
             beam$row <- obj$row[next_obj]
+            south_hist <- c(south_hist, add$i)
             if (obj$type[next_obj] == "-") {
               if (verbose) cat("encountered -\n")
               split <- beam
@@ -318,23 +306,23 @@ count_illuminated_tiles <- function(path, verbose = TRUE) {
           if (beam$row < edge) {
             add <- data.frame(row = (beam$row + 1):edge, col = beam$col)
             add$i <- (add$col - 1) * edge + add$row
-            add$beam_id <- beam$beam_id
-            beam$path <- c(beam$path, add$i)
+            is_energized[add$i] <- TRUE
           }
           active <- FALSE
-          is_illuminated[beam$path] <- TRUE
         }
       }
     }
   } # DFS while loop
-  out <- sum(is_illuminated)
+  out <- sum(is_energized)
+
   return(out)
 }
 
 stopifnot(count_illuminated_tiles("day16/test_input.txt") == 46)
 
-count_illuminated_tiles("day16/input.txt", verbose = FALSE)
+tic("day 16, part 1")
+stopifnot(count_illuminated_tiles("day16/input.txt", verbose = FALSE) == 7870)
+toc(log = TRUE)
 
-# could we potentially store every path somehow?
-# ah, easy! you just have to ask if you are on a cell which is in the matrix corresponding to the orientation you are currently travelling on
-# there's four matricies for this!
+# gotta go in from any start value!
+
