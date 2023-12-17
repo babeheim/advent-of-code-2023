@@ -1,8 +1,4 @@
 
-rm(list = ls())
-
-source("project_support.R")
-
 beam_dfs_sim <- function(edge, obj, beam, verbose = FALSE) {
 
   is_energized <- rep(FALSE, length.out = edge^2)
@@ -225,31 +221,7 @@ beam_dfs_sim <- function(edge, obj, beam, verbose = FALSE) {
   return(out)
 }
 
-check_overlap <- function(x, y, min_length = 2) {
-  if (length(x) >= min_length) {
-    if (x[1] %in% y) {
-      tar <- which(y == x[1])
-      for (i in 1:length(tar)) {
-        if (tar[i] + (length(x) - 1) <= length(y)) {
-          check <- tar[i] + 0:(length(x)-1)
-          if (identical(x, y[check])) {
-            return(TRUE)
-          } else if (i == length(tar)) {
-            return(FALSE)
-          }
-        } else {
-          return(FALSE)
-        }    
-      }
-    } else {
-      return(FALSE)
-    }
-  } else {
-    return(FALSE)
-  }
-}
-
-count_energized_tiles <- function(path, verbose = FALSE) {
+count_energized_tiles <- function(path, part1 = TRUE, verbose = FALSE) {
 
   x <- readLines(path)
   map <- str_to_mat(x)
@@ -287,11 +259,35 @@ count_energized_tiles <- function(path, verbose = FALSE) {
   add$type <- "\\"
   obj <- bind_rows(obj, add)
 
-  # initialize beam outside map
-  beam <- list(row = 1L, col = 0L, heading = 0)
+  if (part1) {
+    # initialize beam outside map
+    beam <- list(row = 1L, col = 0L, heading = 0)
+    # use DFS to simulate beam paths and count energized tiles
+    out <- beam_dfs_sim(edge, obj, beam, verbose)
+  } else {
+    north_scores <- rep(NA, edge)
+    for (i in 1:length(north_scores)) {
+      beam <- list(row = 0L, col = i, heading = 3)
+      north_scores[i] <- beam_dfs_sim(edge, obj, beam, verbose)
+    }
+    south_scores <- rep(NA, edge)
+    for (i in 1:length(south_scores)) {
+      beam <- list(row = edge + 1L, col = i, heading = 1)
+      south_scores[i] <- beam_dfs_sim(edge, obj, beam, verbose)
+    }
+    west_scores <- rep(NA, edge)
+    for (i in 1:length(west_scores)) {
+      beam <- list(row = i, col = 0L, heading = 0)
+      west_scores[i] <- beam_dfs_sim(edge, obj, beam, verbose)
+    }
+    east_scores <- rep(NA, edge)
+    for (i in 1:length(east_scores)) {
+      beam <- list(row = i, col = edge + 1L, heading = 2)
+      east_scores[i] <- beam_dfs_sim(edge, obj, beam, verbose)
+    }
+    out <- max(north_scores, south_scores, west_scores, east_scores)
+  }
 
-  # use DFS to simulate beam paths and count energized tiles
-  out <- beam_dfs_sim(edge, obj, beam, verbose)
   return(out)
 
 }
@@ -300,4 +296,10 @@ stopifnot(count_energized_tiles("day16/test_input.txt") == 46)
 
 tic("day 16, part 1")
 stopifnot(count_energized_tiles("day16/input.txt", verbose = FALSE) == 7870)
+toc(log = TRUE)
+
+stopifnot(count_energized_tiles("day16/test_input.txt", part1 = FALSE) == 51)
+
+tic("day 16, part 2")
+stopifnot(count_energized_tiles("day16/input.txt", part1 = FALSE) == 8143)
 toc(log = TRUE)
