@@ -80,7 +80,6 @@ calc_pool_area <- function(path, part1 = TRUE) {
       strip_top <- box_edges$y_start[2 * (j - 1) + 1]
       strip_bottom <- box_edges$y_start[2 * (j - 1) + 2]
       strip_i_area <- strip_i_area + abs(x_start - x_stop) * abs(strip_top - strip_bottom)
-      polygon(c(x_start, x_start, x_stop, x_stop), c(strip_top, strip_bottom, strip_bottom, strip_top), col = gray(0.3, 0.3), border = NA)
     }
 
     pool_area <- pool_area + strip_i_area
